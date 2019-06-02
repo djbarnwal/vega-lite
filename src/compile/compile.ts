@@ -147,7 +147,9 @@ function assembleTopLevelModel(
   const data = [].concat(
     model.assembleSelectionData([]),
     // only assemble data in the root
-    assembleRootData(model.component.data, datasets)
+    assembleRootData(model.component.data, datasets),
+    // selection aggregates derives from root data
+    model.assembleSelectionAggregateData([])
   );
 
   const projections = model.assembleProjections();

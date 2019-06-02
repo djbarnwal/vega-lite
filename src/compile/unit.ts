@@ -38,6 +38,7 @@ import {RepeaterValue, replaceRepeaterInEncoding} from './repeater';
 import {ScaleIndex} from './scale/component';
 import {
   assembleTopLevelSignals,
+  assembleUnitSelectionAggregateData,
   assembleUnitSelectionData,
   assembleUnitSelectionMarks,
   assembleUnitSelectionSignals
@@ -222,6 +223,10 @@ export class UnitModel extends ModelWithField {
 
   public assembleSelectionData(data: VgData[]): VgData[] {
     return assembleUnitSelectionData(this, data);
+  }
+
+  public assembleSelectionAggregateData(data: VgData[]): VgData[] {
+    return assembleUnitSelectionAggregateData(this, data);
   }
 
   public assembleLayout(): VgLayout {

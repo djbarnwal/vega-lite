@@ -1,7 +1,15 @@
 import {Signal, SignalRef} from 'vega';
 import {selector as parseSelector} from 'vega-event-selector';
 import {identity, isArray, stringValue} from 'vega-util';
-import {forEachSelection, MODIFY, SELECTION_DOMAIN, STORE, VL_SELECTION_RESOLVE} from '.';
+import {
+  forEachSelection,
+  MODIFY,
+  SELECTION_DOMAIN,
+  STORE,
+  VL_SELECTION_RESOLVE,
+  AGG_STORE,
+  ComparisonFieldAggregate
+} from '.';
 import {dateTimeExpr, isDateTime} from '../../datetime';
 import {warn} from '../../log';
 import {LogicalOperand} from '../../logical';
@@ -14,6 +22,7 @@ import {LayerModel} from '../layer';
 import {isUnitModel, Model} from '../model';
 import {UnitModel} from '../unit';
 import {forEachTransform} from './transforms/transforms';
+import {ComparisonOp, getComparisonOperator, DEFAULT_AGGREGATE} from '../../predicate';
 
 export function assembleInit(
   init: (SelectionInit | SelectionInit[] | SelectionInitArray)[] | SelectionInit,
@@ -122,6 +131,35 @@ export function assembleUnitSelectionData(model: UnitModel, data: VgData[]): VgD
   return data;
 }
 
+export function assembleUnitSelectionAggregateData(model: UnitModel, data: VgData[]): VgData[] {
+  forEachSelection(model, selCmpt => {
+    const containsAggregateStore = data.filter(d => d.name === selCmpt.name + AGG_STORE);
+    if (selCmpt.aggregates && !containsAggregateStore.length) {
+      const {aggregates} = selCmpt,
+        aggregateStore = {} as VgData;
+
+      aggregateStore.name = selCmpt.name + AGG_STORE;
+      // PROBLEM
+      aggregateStore.source = model.lookupDataSource('main');
+      // PRIVATE, how to proceed?
+      // source: model.component.data.main._source
+      aggregateStore.transform = [{type: 'filter', expr: `vlSelectionTest('${selCmpt.name + STORE}', datum)`}];
+      const params = aggregates.reduce(
+        (p: any, a: ComparisonFieldAggregate): any => {
+          p.fields.push(a.sfield);
+          p.ops.push(a.op);
+          p.as.push(`${a.sfield}_${a.op}`);
+          return p;
+        },
+        {fields: [], ops: [], as: []}
+      );
+      aggregateStore.transform.push({type: 'aggregate', ...params});
+      data.push(aggregateStore);
+    }
+  });
+
+  return data;
+}
 export function assembleUnitSelectionMarks(model: UnitModel, marks: any[]): any[] {
   forEachSelection(model, (selCmpt, selCompiler) => {
     marks = selCompiler.marks ? selCompiler.marks(model, selCmpt, marks) : marks;
@@ -143,6 +181,17 @@ export function assembleLayerSelectionMarks(model: LayerModel, marks: any[]): an
   }
 
   return marks;
+}
+
+// For Prototype only, for production write corresponding interfaces
+export function assembleComparisonSelectionPredicate(model: Model, predicate: any): string {
+  const dfield = Object.keys(predicate)[0];
+  const comparisonSpec = predicate[dfield];
+  const {field} = comparisonSpec;
+  const aggregate = comparisonSpec.aggregate ? comparisonSpec.aggregate : DEFAULT_AGGREGATE;
+  const operator = getComparisonOperator(Object.keys(comparisonSpec)) as ComparisonOp;
+  const aggStore = comparisonSpec[operator] + AGG_STORE;
+  return `vlComparisonTest('${aggStore}', datum, {operator: '${operator}', vfield: '${field}_${aggregate}', on: '${dfield}'})`;
 }
 
 export function assembleSelectionPredicate(

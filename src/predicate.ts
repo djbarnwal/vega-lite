@@ -3,6 +3,7 @@ import {valueExpr, vgField} from './channeldef';
 import {DateTime} from './datetime';
 import {LogicalOperand} from './logical';
 import {fieldExpr as timeUnitFieldExpr, normalizeTimeUnit, TimeUnit} from './timeunit';
+import {AggregateOp} from 'vega';
 
 export type Predicate =
   // a) FieldPredicate (but we don't type FieldFilter here so the schema has no nesting
@@ -18,7 +19,9 @@ export type Predicate =
   // b) Selection Predicate
   | SelectionPredicate
   // c) Vega Expression string
-  | string;
+  | string
+  // d) Selection Comparison Predicate
+  | DatumSelectionComparisonPredicate;
 
 export type FieldPredicate =
   | FieldEqualPredicate
@@ -41,6 +44,17 @@ export function isSelectionPredicate(predicate: LogicalOperand<Predicate>): pred
   return predicate && predicate['selection'];
 }
 
+export function isSelectionComparisonPredicate(
+  predicate: LogicalOperand<Predicate>
+): predicate is DatumSelectionComparisonPredicate {
+  if (predicate && typeof predicate === 'object') {
+    const comparisonSpec = Object.values(predicate)[0];
+    const operator = getComparisonOperator(Object.keys(comparisonSpec));
+    return !!operator;
+  }
+  return false;
+}
+
 export interface FieldPredicateBase {
   // TODO: support aggregate
 
@@ -60,6 +74,39 @@ export interface FieldEqualPredicate extends FieldPredicateBase {
    * The value that the field should be equal to.
    */
   equal: string | number | boolean | DateTime;
+}
+
+import {Flag, flagKeys} from './util';
+
+export const DEFAULT_AGGREGATE = 'mean';
+export type ComparisonOp = 'lt' | 'gt' | 'lte' | 'gte' | 'eql' | 'neql';
+
+const COMPARISON_OPERATOR_INDEX: Flag<ComparisonOp> = {
+  lt: 1,
+  lte: 1,
+  gt: 1,
+  gte: 1,
+  eql: 1,
+  neql: 1
+};
+
+export const COMPARISON_OPERATORS = flagKeys(COMPARISON_OPERATOR_INDEX);
+
+export function getComparisonOperator(keys: string[]): ComparisonOp {
+  for (const key of keys) {
+    if (COMPARISON_OPERATORS.includes(key as ComparisonOp)) return key as ComparisonOp;
+  }
+  return null;
+}
+
+// https://stackoverflow.com/questions/55457347/dynamic-keys-and-value-type-checking-in-typescript
+export type SelectionComparisonPredicate = {[key in ComparisonOp]: string} & {
+  field: string;
+  aggregate?: AggregateOp;
+};
+
+export interface DatumSelectionComparisonPredicate {
+  [key: string]: SelectionComparisonPredicate;
 }
 
 export function isFieldEqualPredicate(predicate: any): predicate is FieldEqualPredicate {

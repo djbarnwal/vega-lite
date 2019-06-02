@@ -134,6 +134,10 @@ export class FacetModel extends ModelWithField {
     return this.child.assembleSelectionData(data);
   }
 
+  public assembleSelectionAggregateData(data: VgData[]): VgData[] {
+    return this.child.assembleSelectionAggregateData(data);
+  }
+
   private getHeaderLayoutMixins(): VgLayout {
     const layoutMixins: VgLayout = {};
 

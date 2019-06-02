@@ -1,10 +1,10 @@
 import {isString} from 'vega-util';
 import {LogicalOperand} from '../logical';
-import {fieldFilterExpression, isSelectionPredicate, Predicate} from '../predicate';
+import {fieldFilterExpression, isSelectionPredicate, isSelectionComparisonPredicate, Predicate} from '../predicate';
 import {logicalExpr} from '../util';
 import {DataFlowNode} from './data/dataflow';
 import {Model} from './model';
-import {assembleSelectionPredicate} from './selection/assemble';
+import {assembleSelectionPredicate, assembleComparisonSelectionPredicate} from './selection/assemble';
 
 /**
  * Converts a predicate into an expression.
@@ -16,6 +16,8 @@ export function expression(model: Model, filterOp: LogicalOperand<Predicate>, no
       return predicate;
     } else if (isSelectionPredicate(predicate)) {
       return assembleSelectionPredicate(model, predicate.selection, node);
+    } else if (isSelectionComparisonPredicate(predicate)) {
+      return assembleComparisonSelectionPredicate(model, predicate);
     } else {
       // Filter Object
       return fieldFilterExpression(predicate);

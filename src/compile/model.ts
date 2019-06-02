@@ -285,6 +285,7 @@ export abstract class Model {
   public abstract assembleSignals(): NewSignal[];
 
   public abstract assembleSelectionData(data: VgData[]): VgData[];
+  public abstract assembleSelectionAggregateData(data: VgData[]): VgData[];
 
   public assembleGroupStyle(): string {
     if (this.type === 'unit' || this.type === 'layer') {
@@ -519,6 +520,7 @@ export abstract class Model {
    * Lookup the name of the datasource for an output node. You probably want to call this in assemble.
    */
   public lookupDataSource(name: string) {
+    console.log('nodes', this.component.data.outputNodes);
     const node = this.component.data.outputNodes[name];
 
     if (!node) {

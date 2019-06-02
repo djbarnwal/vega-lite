@@ -107,6 +107,10 @@ export class LayerModel extends Model {
     return this.children.reduce((db, child) => child.assembleSelectionData(db), data);
   }
 
+  public assembleSelectionAggregateData(data: VgData[]): VgData[] {
+    return this.children.reduce((db, child) => child.assembleSelectionAggregateData(db), data);
+  }
+
   public assembleTitle(): VgTitle {
     let title = super.assembleTitle();
     if (title) {
